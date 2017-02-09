@@ -1,4 +1,5 @@
 import tkinter as tk
+import game_classes as gc
 
 class LeftMenuBar:
     def __init__(self, parent, x, y, width, height):
@@ -7,15 +8,17 @@ class LeftMenuBar:
         self.frame.place(x=x, y=y)
 
 class Field:
-    def __init__(self, parent, x, y, width, height):
+    def __init__(self, parent, x, y, width, height, sizex=8, sizey=8):
         self.parent = parent
         self.canvas = tk.Canvas(width=width, height=height, bg='red')
         self.canvas.place(x=x, y=y)
+        self.battlefield = [[gc.NO_UNIT for i in range(sizex)] for j in range(sizey)]
 
 class TurnButton:
     def __init__(self, parent, x, y, max_height):
         self.parent = parent
         self.button = tk.Button(self.parent.root, text = 'Next turn', font = 'Arial 15', bg='yellow')
+        self.button['command'] = self.parent.next_turn
         self.button.place(x=x, y=y)
         self.parent.root.update()
         self.button.update()
@@ -40,4 +43,4 @@ class Window():
     def run(self):
         pass
     def next_turn(self):
-        pass
+        print('next turn')
