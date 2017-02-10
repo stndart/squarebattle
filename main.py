@@ -2,7 +2,7 @@ import tkinter
 import classes
 
 root = tkinter.Tk()
-root.geometry('700x600')
+root.geometry('700x500')
 root.bind('Alt-<F4>', lambda e: root.destroy())
 root.bind('<Escape>', lambda e: root.destroy())
 root.update()
