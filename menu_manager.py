@@ -6,8 +6,8 @@ class MainButton:
         self.parent = parent
         self.button = tk.Button(self.parent.root, font='Arial 40', text='Start',
                                 background = 'lightgreen', activebackground = 'orange',
-                                foreground='red', activeforeground='blue',
-                                command=self.parent.start_game)
+                                foreground='red', activeforeground='blue')
+        self.button['command'] = self.parent.start_game
         self.button.place(x=self.parent.root.winfo_width()//2,
                           y=self.parent.root.winfo_height()//2,
                           anchor=tk.CENTER)
