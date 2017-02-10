@@ -1,4 +1,5 @@
 NO_UNIT = -1
+PLAYER1 = 1
 
 class StrengthOrginizer:
     def __init__(self, unit):
