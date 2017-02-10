@@ -30,6 +30,7 @@ class Field:
             self.canvas.create_line(0, ly, self.width + 2, ly)
         self.canvas.bind('<Button-1>', self.click)
         self.chosen = (-1, -1)
+        self.highlight = None
     def click(self, event):
         sx = event.x * self.sizex // self.width
         sy = event.y * self.sizey // self.height
@@ -46,6 +47,8 @@ class Field:
     def delete_unit(self):
         pass
     def redraw(self):
+        if self.highlight is not None:
+            self.canvas.delete(self.highlight)
         for i in self.battlefield:
             for j in i:
                 if j == gc.NO_UNIT:

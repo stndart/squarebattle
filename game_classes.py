@@ -4,15 +4,15 @@ PLAYER1 = 1
 class StrengthOrginizer:
     def __init__(self, unit):
         self.unit = unit
-        self.ability_buff = [0, 0, 0, 0]
+        self.support = [0, 0, 0, 0]
     def reorganize(self, values):
-        self.ability_buff = values
+        self.support = values
     def get_strength(self):
         res = [[self.unit.strength[i][j] for j in range(3)] for i in range(3)]
-        res[0][1] += self.ability_buff[0]
-        res[1][0] += self.ability_buff[1]
-        res[1][2] += self.ability_buff[2]
-        res[2][1] += self.ability_buff[3]
+        res[0][1] += self.support[0]
+        res[1][0] += self.support[1]
+        res[1][2] += self.support[2]
+        res[2][1] += self.support[3]
         return res
 
 class Unit:
