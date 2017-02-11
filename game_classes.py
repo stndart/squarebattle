@@ -1,5 +1,6 @@
 NO_UNIT = -1
 PLAYER1 = 1
+PLAYER2 = 2
 
 
 class StrengthOrginizer:  # Maybe include in Unit class?
@@ -38,17 +39,24 @@ class Unit:
 
     def get_support(self, direction):
         return self.support
+    
+    def redraw(self):
+        pass
 
 
 class Infantry(Unit):
     def __init__(self, *args, **kwargs):
         Unit.__init__(*args, **kwargs)
-        self.strength = None  # !!!
-        self.support = None  # !!!
+        self.strength = [[1, 2, 1],
+                         [1, 0, 1],
+                         [1, 1, 1]]
+        self.support = [0, 0, 2, 0]  # n, w, s, e
 
 
 class Horeseman(Unit):  # The only difference is strength and support
     def __init__(self, *args, **kwargs):
         Unit.__init__(*args, **kwargs)
-        self.strength = None  # !!!
-        self.support = None  # !!!
+        self.strength = [[2, 1, 2],
+                         [1, 0, 1],
+                         [1, 1, 1]]
+        self.support = [0, 1, 0, 1]  # n, w, s, e

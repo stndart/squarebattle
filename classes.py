@@ -1,6 +1,6 @@
 import tkinter as tk
 import game_classes as gc
-from game_manager import GameManager
+from game_interface_manager import GameManager
 from menu_manager import MenuManager
 
 
@@ -20,11 +20,18 @@ class Window():
         if self.state != Window.WAITING:
             pass  # error handler?
         self.state = Window.GAME
-        self.menu_manager = MenuManager(self)
+        self.manager = MenuManager(self)
 
     def start_game(self):
-        if self.state != Window.MENU:
+        if self.state == Window.GAME:
             pass  # error handler?
-        del self.menu_manager
+        del self.manager
         self.state = Window.GAME
-        self.menu_manager = GameManager(self)
+        self.manager = GameManager(self)
+    
+    def to_menu(self):
+        if self.state == Window.MENU:
+            pass  # error handler?
+        del self.manager
+        self.state = Window.MENU
+        self.manager = MenuManager(self)

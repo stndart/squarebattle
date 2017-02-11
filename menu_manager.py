@@ -11,6 +11,10 @@ class MainButton:
         self.button.place(x=self.parent.root.winfo_width() // 2,
                           y=self.parent.root.winfo_height() // 2,
                           anchor=tk.CENTER)
+    
+    def exit(self):
+        self.button.destroy()
+        del self
 
 
 class MenuManager:
@@ -23,3 +27,7 @@ class MenuManager:
 
     def start_game(self):
         self.parent.start_game()
+        self.exit()
+    
+    def exit(self):
+        self.main_button.exit()
