@@ -39,9 +39,6 @@ class Unit:
 
     def get_support(self, direction):
         return self.support
-    
-    def redraw(self):
-        pass
 
 
 class Infantry(Unit):

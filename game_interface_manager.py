@@ -1,6 +1,6 @@
 import tkinter as tk
 from PIL import Image, ImageTk
-from game import Game
+import game
 
 
 class LeftMenuBar:
@@ -85,7 +85,7 @@ class Field:
         self.canvas.bind('<Button-1>', self.click)
         self.canvas.bind('<Motion>', self.mouse_move)
         
-        self.game = Game(self, sizex, sizey)
+        self.game = game.Game(self, sizex, sizey)
         self.chosen_square = None
         self.highlighted_square = None
         self.waitng_for_choice = 'nothing'
@@ -120,7 +120,14 @@ class Field:
             self.chosen_square = None
             self.parent.base_menu()
         else:
-            self.parent.choose_square_menu(self.game.get_unit(sx, sy))
+            if self.waitng_for_choice == 'nothing':
+                self.parent.choose_square_menu(self.game.get_unit(sx, sy))
+            elif self.waitng_for_choice == 'add_unit':
+                self.put_base_unit()
+            elif self.waitng_for_choice == 'upgrade_unit':
+                self.upgrade_unit()
+            elif self.waitng_for_choice == 'remove_unit':
+                self.remove_unit()
         self.redraw()
 
     def put_base_unit(self):
@@ -163,8 +170,14 @@ class Field:
             self.colour_square('chosen')
         for i in range(self.sizex):
             for j in range(self.sizey):
-                if self.game.get_unit(i, j):
-                    self.game.get_unit(i, j).redraw()
+                u = self.game.get_unit(i, j)
+                if u:
+                    if isinstance(u, game.gc.Unit):
+                        pass
+                    elif isinstance(u, game.gc.Infantry):
+                        pass
+                    elif isinstance(u, game.gc.Horeseman):
+                        pass
     
     def exit(self):
         self.game.exit()
