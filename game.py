@@ -26,7 +26,7 @@ class Game:
         self.highlighted = (sx, sy)
     
     def put_base_unit(self):
-        new_unit = gc.Unit(self.chosen, gc.PLAYER1, (+1, 0))  # Replace PLAYER1 to current_player
+        new_unit = gc.Unit(self, self.chosen, gc.PLAYER1, 1)  # Replace PLAYER1 to current_player
         self.battlefield[self.chosen[1]][self.chosen[0]] = new_unit
     
     def exit(self):
