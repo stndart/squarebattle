@@ -2,8 +2,6 @@ NO_UNIT = -1
 PLAYER1 = 1
 PLAYER2 = 2
 
-def rotate_matrix(matrix, angle):  # 0 <= angle
-    
 
 class StrengthOrginizer:  # Maybe include in Unit class?
     def __init__(self, unit):
