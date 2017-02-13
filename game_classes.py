@@ -85,7 +85,7 @@ class Unit:
 
 class Infantry(Unit):
     def __init__(self, *args, **kwargs):
-        Unit.__init__(*args, **kwargs)
+        Unit.__init__(self, *args, **kwargs)
         self.strength = [[1, 2, 1],
                          [1, 0, 1],
                          [1, 1, 1]]
