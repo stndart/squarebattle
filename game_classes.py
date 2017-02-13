@@ -40,7 +40,7 @@ class Unit:
         self.health = self.base_health
 
     def reorginize(self, values):
-        self.strength_orginizer.reorginize(values)
+        self.strength_orginizer.reorganize(values)
     
     def fight_around(self):
         strength = self.strength_orginizer.get_strength()
@@ -53,9 +53,10 @@ class Unit:
                 dx2 = direction[(1 - self.direction) % 4]
                 nx = self.position[1] + dx2
                 ny = self.position[0] + dy2
-                if 0 <= self.strength_center + dx2 < len(self.strength[i]) and 0 <= self.strength_center + dy2 < len(self.strength):
-                    if 0 <= ny < self.parent.sizey and 0 <= nx < self.parent.sizex:
-                        self.parent.battlefield[ny][nx].health -= self.strength[dy2][dx2]
+                if 0 <= self.strength_center[1] + dx2 < len(self.strength[i]):
+                    if 0 <= self.strength_center[0] + dy2 < len(self.strength):
+                        if 0 <= ny < self.parent.sizey and 0 <= nx < self.parent.sizex:
+                            self.parent.battlefield[ny][nx].health -= self.strength[dy2][dx2]
     
     def get_support(self):
         support_n = 0
@@ -72,11 +73,15 @@ class Unit:
                     neig = self.parent.battlefield[ny][nx]
                 else:
                     continue
-                if 0 <= self.support_center + dx2 < len(self.support[i]) and 0 <= self.support_center + dy2 < len(self.support):
-                    if 0 <= neig.support_center - dx2 < len(neig.support[i]) and 0 <= neig.support_center - dy2 < len(neig.support):
-                        support_n += min(self.support[self.support_center[0] + dy2][self.support_center[1] + dx2],
-                                         neig.support[neig.support_center[0] - dy2][neig.support_center[1] - dx2])
+                if 0 <= self.support_center[1] + dx2 < len(self.support[i]):
+                    if 0 <= self.support_center[0] + dy2 < len(self.support):
+                        if 0 <= neig.support_center - dx2 < len(neig.support[i]):
+                            if 0 <= neig.support_center - dy2 < len(neig.support):
+                                support_n += min(
+                                    self.support[self.support_center[0] + dy2][self.support_center[1] + dx2],
+                                    neig.support[neig.support_center[0] - dy2][neig.support_center[1] - dx2])
         return support_n
+
 
 class Infantry(Unit):
     def __init__(self, *args, **kwargs):

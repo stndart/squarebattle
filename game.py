@@ -1,5 +1,6 @@
 import game_classes as gc
 
+
 class Game:
     def __init__(self, parent, sizex, sizey):
         self.sizex = sizex
