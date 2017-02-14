@@ -25,7 +25,7 @@ class Unit:
     def __init__(self, parent, position, side, direction):
         self.parent = parent
         self.position = position
-        self.direction = direction  # 0=n, 1=e, 2=s, 3=w
+        self.direction = direction  # 0=e, 1=n, 2=w, 3=s
         self.side = side
         self.strength = [[1, 1, 1],
                          [1, 0, 1],

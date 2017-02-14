@@ -22,7 +22,7 @@ class Mask:
                     break
 
     def rotate(self, direction):
-        turns = abs(self.direction - direction)
+        turns = (direction - self.direction) % 4
         for _ in range(turns):
             self.data = list(zip(*self.data[::-1]))
         if turns % 2 == 1:

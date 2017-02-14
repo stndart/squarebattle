@@ -9,26 +9,26 @@ class LeftMenuBar:
         self.frame = tk.Frame(self.parent.root, width=width, height=height, bg='lightblue')
         self.frame.place(x=x, y=y)
         self.buttons = []
+        self.icons = dict()
 
-    def new_button(self, image, x, y):
-        self.buttons.append(tk.Button(master=self.frame, image=self.parent.icons[image],
+    def new_button(self, image, x, y, meth):
+        self.icons[image] = ImageTk.PhotoImage(self.parent.icons[image])
+        self.buttons.append(tk.Button(master=self.frame, image=self.icons[image],
                                       bg='white', activebackground='white',
-                                      width=self.parent.icons[image].width(),
-                                      height=self.parent.icons[image].height()))
+                                      width=self.icons[image].width(),
+                                      height=self.icons[image].height(),
+                                      command=meth))
         self.buttons[-1].place(x=x, y=y)
 
     def base_menu(self):
         for i in self.buttons:
             i.destroy()
         self.buttons = []
-        self.new_button(image='new', x=0, y=0)
-        self.buttons[0]['command'] = self.add_unit
-        self.new_button(image='upgrade', x=0, y=40)
-        self.buttons[1]['command'] = self.upgrade_unit
-        self.new_button(image='delete', x=0, y=80)
-        self.buttons[2]['command'] = self.remove_unit
-        self.new_button(image='exit', x=0, y=120)
-        self.buttons[3]['command'] = lambda: self.exit(flag='inner')
+        self.new_button(image='new', x=0, y=0, meth=self.add_unit)
+        self.new_button(image='upgrade', x=0, y=40, meth=self.upgrade_unit)
+        self.new_button(image='delete', x=0, y=80, meth=self.remove_unit)
+        self.new_button(image='rotate', x=0, y=120, meth=self.rotate_unit)
+        self.new_button(image='exit', x=0, y=160, meth=lambda: self.exit(flag='inner'))
     
     def add_unit(self):
         if self.parent.field.game.chosen == (-1, -1):
@@ -41,6 +41,12 @@ class LeftMenuBar:
             self.parent.field.highlight_remove_unit()
         else:
             self.parent.field.remove_unit()
+    
+    def rotate_unit(self):
+        if self.parent.field.game.chosen == (-1, -1):
+            self.parent.field.highlight_rotate_unit()
+        else:
+            self.parent.field.rotate_unit()
     
     def upgrade_unit(self):
         if self.parent.field.game.chosen == (-1, -1):
@@ -89,6 +95,19 @@ class Field:
         self.chosen_square = None
         self.highlighted_square = None
         self.waitng_for_choice = 'nothing'
+        
+        self.load_textures()
+    
+    def load_textures(self):
+        self.unit_icons = dict()
+        for key in ['unit']:
+            im = self.parent.icons[key].resize((self.width // self.sizex - 2, self.height // self.sizey - 2))
+            self.unit_icons[key] = [None for i in range(4)]
+            for i in range(4):
+                self.unit_icons[key][i] = ImageTk.PhotoImage(im.rotate(i * 90))
+    
+    def resize(self):
+        pass
 
     def click(self, event):
         sx = event.x * self.sizex // self.width
@@ -109,35 +128,61 @@ class Field:
         self.waitng_for_choice = 'remove_unit'
         pass
     
+    def highlight_rotate_unit(self):
+        self.waitng_for_choice = 'rotate_unit'
+        pass
+    
     def highlight_upgrade_unit(self):
         self.waitng_for_choice = 'upgrade_unit'
         pass
+    
+    def unchoose_square(self):
+        self.canvas.delete(self.chosen_square)
+        self.chosen_square = None
+        self.game.chosen = (-1, -1)
+        self.parent.base_menu()
+        self.redraw()
 
     def choose_square(self, sx, sy):
         r = self.game.choose_square(sx, sy)
         if r == 'already_chosen':  # unchoose square
-            self.canvas.delete(self.chosen_square)
-            self.chosen_square = None
-            self.parent.base_menu()
+            self.unchoose_square()
         else:
             if self.waitng_for_choice == 'nothing':
                 self.parent.choose_square_menu(self.game.get_unit(sx, sy))
+                self.redraw()
             elif self.waitng_for_choice == 'add_unit':
                 self.put_base_unit()
+                self.waitng_for_choice = 'nothing'
             elif self.waitng_for_choice == 'upgrade_unit':
                 self.upgrade_unit()
+                self.waitng_for_choice = 'nothing'
             elif self.waitng_for_choice == 'remove_unit':
                 self.remove_unit()
-        self.redraw()
+                self.waitng_for_choice = 'nothing'
+            elif self.waitng_for_choice == 'rotate_unit':
+                self.rotate_unit()
+                self.waitng_for_choice = 'nothing'
 
     def put_base_unit(self):
-        self.game.put_base_unit()
+        kek = self.game.put_base_unit()
+        self.unchoose_square()
+        return kek
 
     def upgrade_unit(self):
-        pass
+        kek = self.game.upgrade_unit()
+        self.unchoose_square()
+        return kek
 
     def remove_unit(self):
-        pass
+        kek = self.game.remove_unit()
+        self.unchoose_square()
+        return kek
+    
+    def rotate_unit(self):
+        kek = self.game.rotate_unit()
+        self.unchoose_square()
+        return kek
 
     def colour_square(self, mode):
         if mode == 'highlight':
@@ -164,6 +209,7 @@ class Field:
                 self.chosen_square = self.canvas.create_rectangle(x1 + 2, y1 + 2, x2, y2, fill='red', outline='red')
 
     def redraw(self):
+        self.canvas.delete('temp')
         if self.game.highlighted != (-1, -1):
             self.colour_square('highlight')
         if self.game.chosen != (-1, -1):
@@ -172,8 +218,16 @@ class Field:
             for j in range(self.sizey):
                 u = self.game.get_unit(i, j)
                 if u:
+                    x1 = i * self.width // self.sizex
+                    y1 = j * self.height // self.sizey
+                    x2 = (i + 1) * self.width // self.sizex
+                    y2 = (j + 1) * self.height // self.sizey
+                    if x1 == 0:
+                        x1 += 1
+                    if y1 == 0:
+                        y1 += 1
                     if isinstance(u, game.gc.Unit):
-                        pass
+                        self.canvas.create_image(x1+2, y1+2, anchor='nw', image=self.unit_icons['unit'][u.direction], tag='temp')
                     elif isinstance(u, game.gc.Infantry):
                         pass
                     elif isinstance(u, game.gc.Horeseman):
@@ -206,6 +260,7 @@ class GameManager:
              'new':     'textures/new_unit.png',
              'upgrade': 'textures/up_unit.png',
              'delete':  'textures/del_unit.png',
+             'rotate':  'textures/rotate_unit.png',
              'unit':    'textures/unit.png'}
 
     def __init__(self, parent):
@@ -215,16 +270,17 @@ class GameManager:
         self.h = self.root.winfo_height()
         pad_left = 45
         pad_right = 45
+        self.icons = dict()
+        self.load_icons()
+        
         self.left_menu_bar = LeftMenuBar(self, x=0, y=52, width=pad_left, height=self.h - 60)
         self.field = Field(self, x=pad_left, y=50, width=self.w - pad_left - pad_right, height=self.h - 60)
         self.turn_button = TurnButton(self, x=self.w // 2, y=25, max_height=50)
-        self.icons = dict()
-        self.load_icons()
         self.base_menu()
 
     def load_icons(self):
         for name in GameManager.ICONS:
-            self.icons[name] = ImageTk.PhotoImage(Image.open(GameManager.ICONS[name]))
+            self.icons[name] = Image.open(GameManager.ICONS[name])
 
     def next_turn(self):
         pass

@@ -4,6 +4,7 @@ import classes
 if __name__ == '__main__':
     root = tkinter.Tk()
     root.geometry('700x600')
+    root.resizable(False, False)  # Until we have classes.Windon.resize method
     root.bind('Alt-<F4>', lambda e: root.destroy())
     root.bind('<Escape>', lambda e: root.destroy())
     root.update()

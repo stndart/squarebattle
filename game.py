@@ -27,8 +27,30 @@ class Game:
         self.highlighted = (sx, sy)
     
     def put_base_unit(self):
-        new_unit = gc.Unit(self, self.chosen, gc.PLAYER1, 1)  # Replace PLAYER1 to current_player
+        if self.battlefield[self.chosen[1]][self.chosen[0]] != gc.NO_UNIT:
+            return False
+        new_unit = gc.Unit(self, self.chosen, gc.PLAYER1, 0)  # Please replace PLAYER1 to current_player
         self.battlefield[self.chosen[1]][self.chosen[0]] = new_unit
+        return True
+    
+    def remove_unit(self):
+        if self.battlefield[self.chosen[1]][self.chosen[0]] == gc.NO_UNIT:
+            return False
+        unit = self.battlefield[self.chosen[1]][self.chosen[0]]
+        self.battlefield[self.chosen[1]][self.chosen[0]] = gc.NO_UNIT
+        del unit
+        return True
+    
+    def rotate_unit(self):
+        if self.battlefield[self.chosen[1]][self.chosen[0]] == gc.NO_UNIT:
+            return False
+        self.battlefield[self.chosen[1]][self.chosen[0]].direction += 1
+        self.battlefield[self.chosen[1]][self.chosen[0]].direction %= 4
+        print(self.battlefield[self.chosen[1]][self.chosen[0]].direction)
+        return True
+    
+    def upgrade_unit(self):
+        pass
     
     def exit(self):
         del self.battlefield
