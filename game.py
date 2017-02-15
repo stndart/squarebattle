@@ -37,7 +37,12 @@ class Game:
     def put_base_unit(self):
         if self.battlefield[self.chosen[1]][self.chosen[0]] != gc.NO_UNIT:
             return False
-        new_unit = gc.Unit(self, self.chosen, self.current_player, 0)  # Please replace PLAYER1 to current_player
+        print(self.current_player)
+        if self.current_player == gc.PLAYER1:
+            direct = 0
+        else:
+            direct = 2
+        new_unit = gc.Unit(self, self.chosen, self.current_player, direct)  # Please replace PLAYER1 to current_player
         self.battlefield[self.chosen[1]][self.chosen[0]] = new_unit
         self.added.append(('add', self.chosen))
         return True
@@ -67,8 +72,9 @@ class Game:
     def next_turn(self):
         if self.current_player == gc.PLAYER1:
             self.current_player = gc.PLAYER2
-        if self.current_player == gc.PLAYER2:
+        elif self.current_player == gc.PLAYER2:
             self.current_player = gc.PLAYER1
+        self.added = []
     
     def exit(self):
         del self.battlefield

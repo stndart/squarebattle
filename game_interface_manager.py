@@ -165,7 +165,8 @@ class Field:
                 self.waitng_for_choice = 'nothing'
 
     def put_base_unit(self):
-        #!!!
+        if 'add' not in self.game.available_actions():
+            return False
         kek = self.game.put_base_unit()
         self.unchoose_square()
         return kek
@@ -284,6 +285,7 @@ class GameManager:
             self.icons[name] = Image.open(GameManager.ICONS[name])
 
     def next_turn(self):
+        self.field.unchoose_square()
         self.field.game.next_turn()
         pass
 
