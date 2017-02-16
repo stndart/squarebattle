@@ -2,7 +2,7 @@
 
 from .const import UNITS
 
-# Position aka Point
+
 class Position:
     def __init__(self, x, y):
         self.x, self.y = x, y
@@ -93,14 +93,16 @@ class Unit:
                     unit.health -= value
 
 
-class Field:
+class Field:  # Add "add_base_unit" method
     def __init__(self, width, height):
         self.width, self.height = width, height
-        self.data = Matrix([[None] * width for _ in height])
+        self.data = Matrix([[None] * width for _ in range(height)])
+
+        # Add base units + field borders
 
     def get(self, position):
-        if position.x < 0 or position.x > self.width: return None
-        if position.y < 0 or position.y > self.height: return None
+        if position.x < 0 or position.x >= self.width: return False
+        if position.y < 0 or position.y >= self.height: return False
         return self.data.get(position)
 
     def get_near(self, position):
@@ -113,7 +115,7 @@ class Field:
     def update_near(self, position):
         for unit in self.get_near(position): unit.update()
 
-    def add(self, name, position, clan):
+    def add(self, name, position, clan):  # Add rotation
         unit = Unit(self, name, position, clan)
         self.data.set(position, unit)
         self.update_near(position)
@@ -138,7 +140,7 @@ class Field:
             unit.reset()
 
 
-class Game:
+class Game:  # Add battle action
     ADD, REMOVE, ROTATE, UPGRADE, REDIRECT = range(5)
 
     def __init__(self, width, height):
@@ -147,35 +149,70 @@ class Game:
         self.turn_done = False
 
     def switch(self):
-        self.turn = not(self.turn)
+        self.turn = not self.turn
         self.turn_done = False
 
     def get_actions(self, position):
         unit = self.field.get(position)
         if unit is None:
-            near_units = [unit for unit in self.field.get_near(position) if unit.clan == self.turn]
-            if near_units: return [self.ADD]
-        elif unit.clan == self.turn:
-            ret = [self.REMOVE]
+            if self.can_add(position): return [self.ADD]
+        elif self.can_modify(position):
+            ret = [self.ROTATE]
             if unit.redirect_damage: ret.append(self.REDIRECT)
             if not self.turn_done:
-                ret.append(self.ROTATE)
+                ret.append(self.REMOVE)
                 if unit.children: ret.append(self.UPGRADE)
             return ret
+        return []
+
+    def can_modify(self, position):
+        unit = self.field.get(position)
+        if not unit: return False
+        if unit.name == 'base_unit': return False
+        if unit.clan != self.turn: return False
+        return True
+
+    def can_add(self, position):
+        if self.field.get(position) is not None: return False
+        near_units = filter(lambda x: x.clan == self.turn, self.field.get_near(position))
+        if not any(near_units): return False
+        return True
 
     def add(self, position):
+        if self.turn_done: return False
+        if not self.can_add(position): return False
         self.turn_done = True
-        unit = Unit(self.field, 'unit', position, self.turn)
+        unit = self.field.add('unit', position, self.turn)
         unit.rotate(0 if self.turn else 2)
+        return True
 
     def remove(self, position):
+        if self.turn_done: return False
+        if not self.can_modify(position): return False
         self.turn_done = True
+        self.field.remove(position)
+        return True
 
-    def rotate(self, position):
-        pass
+    def rotate(self, position, direction):
+        if not self.can_modify(position): return False
+        self.field.get(position).rotate(direction)
+        return True
 
-    def upgrade(self, position):
+    def upgrade(self, position, name):
+        if self.turn_done: return False
+        if not self.can_modify(position): return False
+        unit = self.field.get(position)
+        if not unit.children or name not in unit.children: return False
         self.turn_done = True
+        self.field.upgrade(position, name)
+        return True
 
-    def redirect(self, position):
-        pass
+    def redirect(self, position, matrix):
+        if not self.can_modify(position): return False
+        unit = self.field.get(position)
+        redirect = dict(matrix)
+        if sum(redirect.items()) > unit.redirect_damage: return False
+        valid_places = [i[0] for i in unit.damage]
+        if not all(i in valid_places for i in redirect.keys()): return False
+        for pos, value in redirect: unit.redirect.set(pos, value)
+        return True
