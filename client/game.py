@@ -61,7 +61,7 @@ class Unit:
         self.health = UNITS[self.name]['health']
         self.damage = Matrix(UNITS[self.name]['damage'])
         self.support = Matrix(UNITS[self.name]['support'])
-        self.children = UNITS[self.name]['children']
+        self.children = UNITS[self.name].get('children')
         self.redirect = Matrix([[0] * self.damage.width for _ in range(self.damage.height)])
         self.rotate(self.direction)
         self.update()
@@ -103,12 +103,15 @@ class Field:
         if position.y < 0 or position.y > self.height: return None
         return self.data.get(position)
 
-    def update_near(self, position):
+    def get_near(self, position):
         for x in range(-1, 2):
             for y in range(-1, 2):
                 if x or y:
                     unit = self.get(position + Position(x, y))
-                    if unit: unit.update()
+                    if unit: yield unit
+
+    def update_near(self, position):
+        for unit in self.get_near(position): unit.update()
 
     def add(self, name, position, clan):
         unit = Unit(self, name, position, clan)
@@ -134,4 +137,45 @@ class Field:
         for _, unit in self.data:
             unit.reset()
 
-            # Win / lose handler
+
+class Game:
+    ADD, REMOVE, ROTATE, UPGRADE, REDIRECT = range(5)
+
+    def __init__(self, width, height):
+        self.field = Field(width, height)
+        self.turn = 0
+        self.turn_done = False
+
+    def switch(self):
+        self.turn = not(self.turn)
+        self.turn_done = False
+
+    def get_actions(self, position):
+        unit = self.field.get(position)
+        if unit is None:
+            near_units = [unit for unit in self.field.get_near(position) if unit.clan == self.turn]
+            if near_units: return [self.ADD]
+        elif unit.clan == self.turn:
+            ret = [self.REMOVE]
+            if unit.redirect_damage: ret.append(self.REDIRECT)
+            if not self.turn_done:
+                ret.append(self.ROTATE)
+                if unit.children: ret.append(self.UPGRADE)
+            return ret
+
+    def add(self, position):
+        self.turn_done = True
+        unit = Unit(self.field, 'unit', position, self.turn)
+        unit.rotate(0 if self.turn else 2)
+
+    def remove(self, position):
+        self.turn_done = True
+
+    def rotate(self, position):
+        pass
+
+    def upgrade(self, position):
+        self.turn_done = True
+
+    def redirect(self, position):
+        pass
