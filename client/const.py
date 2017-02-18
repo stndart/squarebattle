@@ -1,8 +1,24 @@
 # Constants
 
+FIELD_SIZE = (7, 7)
+KINGS = ((0, 3), (7, 3))
+
 X = None  # To define center of mask
 
 UNITS = {
+    'king': {
+        'health': 10,
+        'damage': [
+            [1, 1, 1],
+            [1, X, 1],
+            [1, 1, 1]
+        ],
+        'support': [
+            [0, 0, 0],
+            [0, X, 0],
+            [0, 0, 0]
+        ]
+    },
     'unit': {
         'health': 0,
         'damage': [

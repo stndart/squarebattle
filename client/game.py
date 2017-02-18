@@ -1,6 +1,6 @@
 # Game logic implementation
 
-from .const import UNITS
+from .const import FIELD_SIZE, KINGS, UNITS
 
 
 class Position:
@@ -55,6 +55,7 @@ class Unit:
         self.position = position
         self.direction = 0
         self.clan = clan
+        self.update_callback = lambda: None
         self.reset()
 
     def reset(self):
@@ -73,10 +74,11 @@ class Unit:
             if unit and self.clan == unit.clan:
                 alt_value = unit.support.get(self.position - unit.position) or 1
                 self.redirect_damage += self.damage.get(pos) * min(value, alt_value)
-
         if sum(i for _, i in self.redirect) > self.redirect_damage:
             for pos, value in self.redirect:
-                self.redirect.set(pos, 0)  # Maybe decrease proportional
+                self.redirect.set(pos, 0)
+        self.field.update_near(self.position)
+        self.update_callback()
 
     def rotate(self, direction):
         self.damage.rotate(direction)
@@ -93,12 +95,15 @@ class Unit:
                     unit.health -= value
 
 
-class Field:  # Add "add_base_unit" method
-    def __init__(self, width, height):
-        self.width, self.height = width, height
+class Field:
+    def __init__(self):
+        self.width, self.height = FIELD_SIZE
         self.data = Matrix([[None] * width for _ in range(height)])
-
-        # Add base units + field borders
+        self.kings = []
+        for i, pos in enumerate(KINGS):
+            direction = 3 if i else 1
+            king = self.add('king', Position(pos), i, direction)
+            self.kings.append(king)
 
     def get(self, position):
         if position.x < 0 or position.x >= self.width: return False
@@ -115,10 +120,10 @@ class Field:  # Add "add_base_unit" method
     def update_near(self, position):
         for unit in self.get_near(position): unit.update()
 
-    def add(self, name, position, clan):  # Add rotation
+    def add(self, name, position, clan, direction):
         unit = Unit(self, name, position, clan)
         self.data.set(position, unit)
-        self.update_near(position)
+        unit.rotate(direction)
         return unit
 
     def remove(self, position):
@@ -137,20 +142,34 @@ class Field:  # Add "add_base_unit" method
         for pos, unit in self.data:
             if unit.health <= 0: self.data.set(pos, None)
         for _, unit in self.data:
+            if unit.name == 'king': continue
             unit.reset()
 
 
-class Game:  # Add battle action
+class Game:
     ADD, REMOVE, ROTATE, UPGRADE, REDIRECT = range(5)
 
-    def __init__(self, width, height):
-        self.field = Field(width, height)
+    def __init__(self):
+        self.field = Field()
         self.turn = 0
         self.turn_done = False
+        self.battle_mode = False
+        self.finished = False
 
     def switch(self):
         self.turn = not self.turn
         self.turn_done = False
+        if self.battle_mode:
+            self.field.battle()
+            return self.check_victory()
+        return False
+
+    def check_victory(self):
+        dead_kings = [(i, x) for i, x in enumerate(self.field.kings) if x.health <= 0]
+        if dead_kings:
+            self.finished = True
+            return -1 if len(dead_kings) == 2 else not dead_kings[0][0]
+        return None
 
     def get_actions(self, position):
         unit = self.field.get(position)
@@ -166,9 +185,10 @@ class Game:  # Add battle action
         return []
 
     def can_modify(self, position):
+        if self.finished: return False
         unit = self.field.get(position)
         if not unit: return False
-        if unit.name == 'base_unit': return False
+        if unit.name == 'king': return False
         if unit.clan != self.turn: return False
         return True
 
@@ -182,9 +202,9 @@ class Game:  # Add battle action
         if self.turn_done: return False
         if not self.can_add(position): return False
         self.turn_done = True
-        unit = self.field.add('unit', position, self.turn)
-        unit.rotate(0 if self.turn else 2)
-        return True
+        direction = 3 if self.turn else 1
+        unit = self.field.add('unit', position, self.turn, direction)
+        return unit
 
     def remove(self, position):
         if self.turn_done: return False
