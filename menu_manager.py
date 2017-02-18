@@ -19,9 +19,6 @@ class MainButton:
                                 background='lightgreen', activebackground='orange',
                                 foreground='red', activeforeground='blue')
         self.button['command'] = self.parent.start_game
-        #self.button.place(x=self.parent.root.winfo_width() // 2,
-                          #y=self.parent.root.winfo_height() // 2,
-                          #anchor=tk.CENTER)
         self.button.pack(anchor='w')
     
     def exit(self):

@@ -6,11 +6,25 @@ class Game:
         self.sizex = sizex
         self.sizey = sizey
         self.battlefield = [[gc.NO_UNIT for i in range(self.sizex)] for j in range(self.sizey)]
+        self.battlefield[self.sizey//2][0] = gc.Base(self, (0, self.sizey//2), gc.PLAYER1)
+        self.battlefield[self.sizey//2][self.sizex - 1] = gc.Base(self, (self.sizex - 1, self.sizey//2), gc.PLAYER2)
         self.highlighted = (-1, -1)
         self.chosen = (-1, -1)
         self.current_player = current_player
         self.added = []
+        
+        #self.debug_fill()
+        
         pass
+    
+    def debug_fill(self):
+        for i in range(self.sizex):
+            for j in range(self.sizey):
+                if i <= self.sizex // 2:
+                    self.current_player = gc.PLAYER1
+                else:
+                    self.current_player = gc.PLAYER2
+                self.put_base_unit(coords=(i, j), override=True)
     
     def choose_square(self, sx, sy):
         if self.chosen == (sx, sy):
@@ -34,28 +48,44 @@ class Game:
         else:
             return {'rotate', 'remove', 'upgrade'}
     
-    def put_base_unit(self):
-        if self.battlefield[self.chosen[1]][self.chosen[0]] != gc.NO_UNIT:
+    def put_base_unit(self, coords=(-1, -1), override=False):
+        if coords == (-1, -1):
+            coords = self.chosen
+        if self.battlefield[coords[1]][coords[0]] != gc.NO_UNIT:
             return False
-        print(self.current_player)
+        if not override:
+            conf = False
+            good = lambda x, y: 0 <= x < self.sizex and 0 <= y < self.sizey
+            add = lambda e, e2: [e[0] + e2[0], e[1] + e2[1]]
+            for t in [[-1, 0], [+1, 0], [0, -1], [0, +1]]:
+                near = add(coords, t)
+                if good(*near):
+                    if self.get_unit(*near) and self.get_unit(*near).side == self.current_player:
+                        conf = True
+                        break
+            if not conf:
+                return False
         if self.current_player == gc.PLAYER1:
             direct = 0
         else:
             direct = 2
-        new_unit = gc.Unit(self, self.chosen, self.current_player, direct)  # Please replace PLAYER1 to current_player
-        self.battlefield[self.chosen[1]][self.chosen[0]] = new_unit
-        self.added.append(('add', self.chosen))
+        new_unit = gc.Unit(self, coords, self.current_player, direct)
+        self.battlefield[coords[1]][coords[0]] = new_unit
+        self.added.append(coords)
         return True
     
-    def remove_unit(self):
-        if self.battlefield[self.chosen[1]][self.chosen[0]] == gc.NO_UNIT:
+    def remove_unit(self, coords=(-1, -1), override=False):
+        if coords == (-1, -1):
+            coords = self.chosen
+        if self.battlefield[coords[1]][coords[0]] == gc.NO_UNIT:
             return False
-        if self.battlefield[self.chosen[1]][self.chosen[0]].side != self.current_player:
-            return False
-        if len(self.added) > 0 and self.chosen == self.added[1]:
-            self.added = []
-        unit = self.battlefield[self.chosen[1]][self.chosen[0]]
-        self.battlefield[self.chosen[1]][self.chosen[0]] = gc.NO_UNIT
+        if not override:
+            if self.battlefield[coords[1]][coords[0]].side != self.current_player:
+                return False
+        if len(self.added) > 0 and coords in self.added:
+            del self.added[self.added.index(coords)]
+        unit = self.battlefield[coords[1]][coords[0]]
+        self.battlefield[coords[1]][coords[0]] = gc.NO_UNIT
         del unit
         return True
     
@@ -75,6 +105,21 @@ class Game:
         elif self.current_player == gc.PLAYER2:
             self.current_player = gc.PLAYER1
         self.added = []
+    
+    def fight(self):
+        for i in range(self.sizex):
+            for j in range(self.sizey):
+                if self.battlefield[j][i] != gc.NO_UNIT:
+                    self.battlefield[j][i].fight_around()
+        for i in range(self.sizex):
+            for j in range(self.sizey):
+                if self.battlefield[j][i] != gc.NO_UNIT:
+                    if self.battlefield[j][i].health <= 0:
+                        self.remove_unit(coords=(i, j), override=True)
+        for i in range(self.sizex):
+            for j in range(self.sizey):
+                if self.battlefield[j][i] != gc.NO_UNIT:
+                    self.battlefield[j][i].health = self.battlefield[j][i].base_health
     
     def exit(self):
         del self.battlefield

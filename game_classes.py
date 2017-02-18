@@ -14,10 +14,12 @@ class StrengthOrginizer:  # Maybe include in Unit class?
     def get_strength(self):
         res = [[self.unit.strength[i][j] for j in range(len(self.unit.strength[i]))] for i in range(len(self.unit.strength))]
         zero = self.unit.strength_center
-        res[zero - 1][zero] += self.support[0]
-        res[zero][zero - 1] += self.support[1]
-        res[zero][zero + 1] += self.support[2]
-        res[zero + 1][zero] += self.support[3]
+        zerox = zero[0]
+        zeroy = zero[1]
+        res[zeroy - 1][zerox] += self.support[0]
+        res[zeroy][zerox - 1] += self.support[1]
+        res[zeroy][zerox + 1] += self.support[2]
+        res[zeroy + 1][zerox] += self.support[3]
         return res
 
 
@@ -38,6 +40,9 @@ class Unit:
         self.strength_orginizer = StrengthOrginizer(self)
         self.base_health = 3
         self.health = self.base_health
+        self.rotatable = True
+        self.removable = True
+        self.upgradeable = True
 
     def reorginize(self, values):
         self.strength_orginizer.reorganize(values)
@@ -51,12 +56,14 @@ class Unit:
                 direction = [dy1, dx1, -dy1, -dx1]
                 dy2 = direction[(-self.direction) % 4]
                 dx2 = direction[(1 - self.direction) % 4]
-                nx = self.position[1] + dx2
-                ny = self.position[0] + dy2
-                if 0 <= self.strength_center[1] + dx2 < len(self.strength[i]):
-                    if 0 <= self.strength_center[0] + dy2 < len(self.strength):
-                        if 0 <= ny < self.parent.sizey and 0 <= nx < self.parent.sizex:
-                            self.parent.battlefield[ny][nx].health -= self.strength[dy2][dx2]
+                nx = self.position[0] + dx2
+                ny = self.position[1] + dy2
+                sx = self.strength_center[0] + dx2
+                sy = self.strength_center[1] + dy2
+                if 0 <= sx < len(self.strength[i]) and 0 <= sy < len(self.strength):
+                    if 0 <= ny < self.parent.sizey and 0 <= nx < self.parent.sizex:
+                        if self.parent.battlefield[ny][nx] != NO_UNIT and self.parent.battlefield[ny][nx].side != self.side:
+                            self.parent.battlefield[ny][nx].health -= self.strength[sy][sx]
     
     def get_support(self):
         support_n = 0
@@ -81,6 +88,22 @@ class Unit:
                                     self.support[self.support_center[0] + dy2][self.support_center[1] + dx2],
                                     neig.support[neig.support_center[0] - dy2][neig.support_center[1] - dx2])
         return support_n
+
+class Base(Unit):
+    def __init__(self, *args, **kwargs):
+        kwargs['direction'] = 0
+        Unit.__init__(self, *args, **kwargs)
+        self.strength = [[1, 1, 1],
+                         [1, 0, 1],
+                         [1, 1, 1]]
+        self.support = [[1, 1, 1],
+                        [1, 0, 1],
+                        [1, 1, 1]]
+        self.base_health = 3
+        self.health = self.base_health
+        self.rotatable = False
+        self.removable = False
+        self.upgradeable = False
 
 
 class Infantry(Unit):
