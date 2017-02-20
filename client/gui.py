@@ -174,15 +174,17 @@ class FieldWidget(QWidget):
     def set_game(self, game):
         self.game = game
         self.field = game.field
+        self.field.remove_callback = self.remove_callback
         for x in range(self.field.width):
-            # self.lay.setColumnMinimumWidth(x, 70)
             for y in range(self.field.height):
-                # self.lay.setRowMinimumHeight(y, 70)
                 position = Position(x, y)
                 unit_widget = UnitWidget(self, position, game)
                 self.lay.addWidget(unit_widget, y, x)
                 unit = self.field.get(position)
                 if unit: unit_widget.set_unit(unit)
+
+    def remove_callback(self, position):
+        self.get(position).set_unit(None)
 
     def get(self, position):
         unit_item = self.lay.itemAtPosition(position.y, position.x)
@@ -203,8 +205,9 @@ class MainFrame(QWidget):
         self.top_lay = QHBoxLayout()
 
         self.turn_label = Label(self, 'data', 'BLUE')
+        self.turn_label.setFixedWidth(70)
         self.turn_label.setProperty('color', 'blue')
-        self.time_label = Label(self, 'data', '00:09')
+        self.time_label = Label(self, 'data', '01:00')
         self.turn_button = Button(self, 'turn', 'Done')
         self.turn_button.clicked.connect(self.turn)
         self.battle_button = Button(self, 'battle', 'Battle')
@@ -226,11 +229,27 @@ class MainFrame(QWidget):
         self.lay.addWidget(self.field_widget)
         self.lay.addLayout(self.bottom_lay)
 
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.update_time)
+        self.timer.start()
+        self.time_left = 60
         self.game = Game()
+        self.battle_button.clicked.connect(self.game.battle)
         self.field_widget.set_game(self.game)
         self.show()
 
+    def update_time(self):
+        self.time_left -= 1
+        if self.time_left == 0: self.turn()
+        minutes = self.time_left // 60
+        seconds = self.time_left % 60
+        time = '{:02}:{:02}'.format(minutes, seconds)
+        self.time_label.setText(time)
+
     def turn(self):
+        self.time_left = 60
+        self.time_label.setText('01:00')
         self.game.switch()
         turn = 'red' if self.game.turn else 'blue'
         self.turn_label.setProperty('color', turn)

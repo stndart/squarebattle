@@ -22,7 +22,7 @@ UNITS = {
         ]
     },
     'unit': {
-        'health': 0,
+        'health': 1,
         'damage': [
             [1, 1, 1],
             [1, X, 1],

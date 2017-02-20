@@ -110,6 +110,7 @@ class Field:
             direction = 3 if i else 1
             base_unit = self.add(BASE_UNIT, Position(*pos), i, direction)
             self.base_units.append(base_unit)
+        self.remove_callback = lambda pos: None
 
     def get(self, position):
         if position.x < 0 or position.x >= self.width: return False
@@ -136,6 +137,7 @@ class Field:
     def remove(self, position):
         self.data.set(position, None)
         self.update_near(position)
+        self.remove_callback(position)
 
     def upgrade(self, position, name):
         unit = self.data.get(position)
@@ -163,10 +165,14 @@ class Game:
         self.battle_mode = False
         self.finished = False
 
+    def battle(self):
+        self.battle_mode = True
+
     def switch(self):
         self.turn = not self.turn
         self.turn_done = False
         if self.battle_mode:
+            self.battle_mode = False
             self.field.battle()
             return self.check_victory()
         return False
