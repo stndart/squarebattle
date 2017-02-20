@@ -1,6 +1,6 @@
 # Game logic implementation
 
-from .const import FIELD_SIZE, KINGS, UNITS
+from const import FIELD_SIZE, KINGS, UNITS
 
 
 class Position:
@@ -77,7 +77,6 @@ class Unit:
         if sum(i for _, i in self.redirect) > self.redirect_damage:
             for pos, value in self.redirect:
                 self.redirect.set(pos, 0)
-        self.field.update_near(self.position)
         self.update_callback()
 
     def rotate(self, direction):
@@ -85,6 +84,7 @@ class Unit:
         self.support.rotate(direction)
         self.redirect.rotate(direction)
         self.direction = direction
+        self.field.update_near(self.position)
         self.update()
 
     def fight(self):
@@ -98,11 +98,11 @@ class Unit:
 class Field:
     def __init__(self):
         self.width, self.height = FIELD_SIZE
-        self.data = Matrix([[None] * width for _ in range(height)])
+        self.data = Matrix([[None] * self.width for _ in range(self.height)])
         self.kings = []
         for i, pos in enumerate(KINGS):
             direction = 3 if i else 1
-            king = self.add('king', Position(pos), i, direction)
+            king = self.add('king', Position(*pos), i, direction)
             self.kings.append(king)
 
     def get(self, position):

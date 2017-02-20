@@ -1,7 +1,7 @@
 # Constants
 
 FIELD_SIZE = (7, 7)
-KINGS = ((0, 3), (7, 3))
+KINGS = ((0, 3), (6, 3))
 
 X = None  # To define center of mask
 
