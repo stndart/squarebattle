@@ -15,17 +15,68 @@ class Images:  # Kind of singleton
         Images.data['unit_blue'] = QPixmap(r'resources\images\unit_blue.png')
         Images.data['unit_red'] = QPixmap(r'resources\images\unit_red.png')
 
+        Images.data['add'] = QPixmap(r'resources\icons\add.png')
+
     @staticmethod
     def get(item):
         return Images.data.get(item)
 
-class UnitWidget(QLabel):
-    def __init__(self, parent, position):
+
+def update_style(widget):
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
+
+class Label(QLabel):
+    def __init__(self, parent, style, text=''):
+        QLabel.__init__(self, text, parent)
+        self.setAlignment(Qt.AlignCenter)
+        self.setProperty('style', style)
+
+class Button(QPushButton):
+    def __init__(self, parent, style, text=''):
+        QPushButton.__init__(self, text, parent)
+        self.setProperty('style', style)
+        self.setFixedWidth(100)
+
+
+class InfoLabel(QLabel):
+    def __init__(self, parent, style):
         QLabel.__init__(self, parent)
+        self.setAlignment(Qt.AlignCenter)
+        self.setFixedSize(25, 25)
+        self.setProperty('style', style)
+
+
+class UnitWidget(QLabel):
+    def __init__(self, parent, position, game):
+        QLabel.__init__(self, parent)
+
         self.setAutoFillBackground(True)
+        self.setMouseTracking(True)
+        self.setAlignment(Qt.AlignCenter)
+        self.installEventFilter(self)
+
+        self.health_label = InfoLabel(self, 'health')
+        self.damage_label = InfoLabel(self, 'damage')
+        self.support_label = InfoLabel(self, 'support')
+        self.reset()
+
+        self.lay = QVBoxLayout(self)
+        self.lay.setContentsMargins(5, 5, 5, 5)
+        self.hlay = QHBoxLayout()
+        self.lay.addStretch(2)
+        self.lay.addLayout(self.hlay)
+        self.lay.addStretch(2)
+        self.hlay.addStretch(2)
+        self.hlay.addWidget(self.damage_label)
+        self.hlay.addWidget(self.health_label)
+        self.hlay.addWidget(self.support_label)
+        self.hlay.addStretch(2)
 
         self.position = position
+        self.game = game
         self.set_unit(None)
+        self.mouse_out()
 
     def set_unit(self, unit):
         self.unit = unit
@@ -38,49 +89,153 @@ class UnitWidget(QLabel):
     def update_callback(self):
         image = self.unit.name + '_' + ('red' if self.unit.clan else 'blue')
         pixmap = Images.get(image).scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        for _ in range(self.unit.direction):
-            pixmap = pixmap.transformed(QTransform().rotate(90), Qt.SmoothTransformation)
+        if self.unit.name != BASE_UNIT:
+            for _ in range(self.unit.direction):
+                pixmap = pixmap.transformed(QTransform().rotate(90), Qt.SmoothTransformation)
         self.setPixmap(pixmap)
+
+    def mouse_in(self):
+        self.setProperty('style', 'hover')
+        update_style(self)
+        if self.unit is None:
+            actions = self.game.get_actions(self.position)
+            if Game.ADD in actions:
+                pixmap = Images.get('add').scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.setPixmap(pixmap)
+        else:
+            self.health_label.setText(str(self.unit.health))
+            self.health_label.setVisible(True)
+            data = {}
+            for pos, value in self.unit.damage:
+                unit = self.game.field.get(pos + self.position)
+                if unit and unit.clan == self.unit.clan: continue
+                if pos not in data: data[pos] = [0, 0]
+                data[pos][0] = value
+            for pos, value in self.unit.redirect:
+                unit = self.game.field.get(pos + self.position)
+                if unit and unit.clan == self.unit.clan: continue
+                if pos not in data: data[pos] = [0, 0]
+                data[pos][0] += value
+            for pos, value in self.unit.support:
+                unit = self.game.field.get(pos + self.position)
+                if unit and unit.clan != self.unit.clan: continue
+                if pos not in data: data[pos] = [0, 0]
+                data[pos][1] = value
+            for pos, d in data.items():
+                unit_widget = self.parent().get(pos + self.position)
+                if unit_widget: unit_widget.display_data(d)
+
+    def clicked(self):
+        actions = self.game.get_actions(self.position)
+        if Game.ADD in actions:
+            unit = self.game.add(self.position)
+            self.set_unit(unit)
+            self.mouse_in()
+
+    def display_data(self, data):
+        if data[0]:
+            self.damage_label.setText(str(data[0]))
+            self.damage_label.setVisible(True)
+        if data[1]:
+            self.support_label.setText(str(data[1]))
+            self.support_label.setVisible(True)
+
+    def reset(self):
+        self.health_label.setVisible(False)
+        self.damage_label.setVisible(False)
+        self.support_label.setVisible(False)
+
+    def mouse_out(self):
+        self.setProperty('style', 'default')
+        update_style(self)
+        if self.unit is None:
+            self.clear()
+        else:
+            self.parent().reset_all()
+
+    def eventFilter(self, widget, event):
+        if event.type() == QEvent.Enter:
+            self.mouse_in()
+        elif event.type() == QEvent.Leave:
+            self.mouse_out()
+        elif event.type() == QEvent.MouseButtonPress:
+            self.clicked()
+        return QLabel.eventFilter(self, widget, event)
+
 
 class FieldWidget(QWidget):
     def __init__(self, parent):
         QWidget.__init__(self, parent)
+        self.setFixedSize(600, 600)
         self.lay = QGridLayout(self)
+        self.lay.setContentsMargins(0, 0, 0, 0)
+        self.setMouseTracking(True)
 
-    def render_field(self, field):
-        for x in range(field.width):
-            self.lay.setColumnMinimumWidth(x, 70)
-            for y in range(field.height):
-                self.lay.setRowMinimumHeight(y, 70)
+    def set_game(self, game):
+        self.game = game
+        self.field = game.field
+        for x in range(self.field.width):
+            # self.lay.setColumnMinimumWidth(x, 70)
+            for y in range(self.field.height):
+                # self.lay.setRowMinimumHeight(y, 70)
                 position = Position(x, y)
-                unit_widget = UnitWidget(self, position)
+                unit_widget = UnitWidget(self, position, game)
                 self.lay.addWidget(unit_widget, y, x)
-                unit = field.get(position)
+                unit = self.field.get(position)
                 if unit: unit_widget.set_unit(unit)
 
     def get(self, position):
-        return self.lay.itemAtPosition(position.y, position.x).widget()
+        unit_item = self.lay.itemAtPosition(position.y, position.x)
+        if unit_item: return unit_item.widget()
+
+    def reset_all(self):
+        for x in range(self.field.width):
+            for y in range(self.field.height):
+                self.get(Position(x, y)).reset()
+
 
 class MainFrame(QWidget):
     def __init__(self):
         QWidget.__init__(self)
-        self.lay = QHBoxLayout(self)
+        self.lay = QVBoxLayout(self)
+        self.lay.setContentsMargins(10, 10, 10, 10)
+
+        self.top_lay = QHBoxLayout()
+
+        self.turn_label = Label(self, 'data', 'BLUE')
+        self.turn_label.setProperty('color', 'blue')
+        self.time_label = Label(self, 'data', '00:09')
+        self.turn_button = Button(self, 'turn', 'Done')
+        self.turn_button.clicked.connect(self.turn)
+        self.battle_button = Button(self, 'battle', 'Battle')
+
+        self.top_lay.addWidget(Label(self, 'title', 'Turn:'))
+        self.top_lay.addWidget(self.turn_label)
+        self.top_lay.addStretch(2)
+        self.top_lay.addWidget(Label(self, 'title', 'Time:'))
+        self.top_lay.addWidget(self.time_label)
+        self.top_lay.addStretch(2)
+        self.top_lay.addWidget(self.turn_button)
+        self.top_lay.addWidget(self.battle_button)
+
         self.field_widget = FieldWidget(self)
+
+        self.bottom_lay = QHBoxLayout()
+
+        self.lay.addLayout(self.top_lay)
         self.lay.addWidget(self.field_widget)
+        self.lay.addLayout(self.bottom_lay)
+
         self.game = Game()
-        self.field_widget.render_field(self.game.field)
-        self.test_btn = QPushButton('Test', self)
-        self.test_btn.clicked.connect(self.test)
-        self.lay.addWidget(self.test_btn)
+        self.field_widget.set_game(self.game)
         self.show()
 
-    def test(self):
-        self.game.field.kings[0].rotate(2)
-        unit = self.game.add(Position(1, 3))
-        self.field_widget.get(Position(1, 3)).set_unit(unit)
+    def turn(self):
         self.game.switch()
-        unit = self.game.add(Position(5, 3))
-        self.field_widget.get(Position(5, 3)).set_unit(unit)
+        turn = 'red' if self.game.turn else 'blue'
+        self.turn_label.setProperty('color', turn)
+        self.turn_label.setText(turn.upper())
+        update_style(self.turn_label)
 
 if __name__ == '__main__':
     app = QApplication(sys_argv)

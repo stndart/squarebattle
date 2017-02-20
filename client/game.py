@@ -1,6 +1,6 @@
 # Game logic implementation
 
-from const import FIELD_SIZE, KINGS, UNITS
+from const import *
 
 
 class Position:
@@ -9,6 +9,12 @@ class Position:
 
     def __add__(self, other):
         return Position(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        return Position(self.x - other.x, self.y - other.y)
+
+    def __str__(self):
+        return 'Position({}, {})'.format(self.x, self.y)
 
 
 class Matrix:
@@ -45,7 +51,7 @@ class Matrix:
     def __iter__(self):
         for x in range(self.width):
             for y in range(self.height):
-                if self.data[y][x]: yield Position(x, y), self.data[x][y]
+                if self.data[y][x]: yield Position(x, y) - self.center, self.data[y][x]
 
 
 class Unit:
@@ -99,11 +105,11 @@ class Field:
     def __init__(self):
         self.width, self.height = FIELD_SIZE
         self.data = Matrix([[None] * self.width for _ in range(self.height)])
-        self.kings = []
-        for i, pos in enumerate(KINGS):
+        self.base_units = []
+        for i, pos in enumerate(BASE_UNITS):
             direction = 3 if i else 1
-            king = self.add('king', Position(*pos), i, direction)
-            self.kings.append(king)
+            base_unit = self.add(BASE_UNIT, Position(*pos), i, direction)
+            self.base_units.append(base_unit)
 
     def get(self, position):
         if position.x < 0 or position.x >= self.width: return False
@@ -114,11 +120,12 @@ class Field:
         for x in range(-1, 2):
             for y in range(-1, 2):
                 if x or y:
-                    unit = self.get(position + Position(x, y))
-                    if unit: yield unit
+                    pos = position + Position(x, y)
+                    unit = self.get(pos)
+                    if unit: yield pos, unit
 
     def update_near(self, position):
-        for unit in self.get_near(position): unit.update()
+        for _, unit in self.get_near(position): unit.update()
 
     def add(self, name, position, clan, direction):
         unit = Unit(self, name, position, clan)
@@ -140,9 +147,9 @@ class Field:
         for _, unit in self.data:
             unit.fight()
         for pos, unit in self.data:
-            if unit.health <= 0: self.data.set(pos, None)
+            if unit.health <= 0: self.remove(pos)
         for _, unit in self.data:
-            if unit.name == 'king': continue
+            if unit.name == BASE_UNIT: continue
             unit.reset()
 
 
@@ -165,10 +172,10 @@ class Game:
         return False
 
     def check_victory(self):
-        dead_kings = [(i, x) for i, x in enumerate(self.field.kings) if x.health <= 0]
-        if dead_kings:
+        dead_base_units = [(i, x) for i, x in enumerate(self.field.base_units) if x.health <= 0]
+        if dead_base_units:
             self.finished = True
-            return -1 if len(dead_kings) == 2 else not dead_kings[0][0]
+            return -1 if len(dead_base_units) == 2 else not dead_base_units[0][0]
         return None
 
     def get_actions(self, position):
@@ -188,22 +195,25 @@ class Game:
         if self.finished: return False
         unit = self.field.get(position)
         if not unit: return False
-        if unit.name == 'king': return False
+        if unit.name == BASE_UNIT: return False
         if unit.clan != self.turn: return False
         return True
 
     def can_add(self, position):
+        if self.turn_done: return False
         if self.field.get(position) is not None: return False
-        near_units = filter(lambda x: x.clan == self.turn, self.field.get_near(position))
-        if not any(near_units): return False
-        return True
+        for pos, unit in self.field.get_near(position):
+            pos -= position
+            if not pos.x or not pos.y:
+                if unit.clan == self.turn: return True
+        return False
 
     def add(self, position):
         if self.turn_done: return False
         if not self.can_add(position): return False
         self.turn_done = True
         direction = 3 if self.turn else 1
-        unit = self.field.add('unit', position, self.turn, direction)
+        unit = self.field.add(DEFAULT_UNIT, position, self.turn, direction)
         return unit
 
     def remove(self, position):

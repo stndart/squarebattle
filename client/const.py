@@ -1,7 +1,9 @@
 # Constants
 
 FIELD_SIZE = (7, 7)
-KINGS = ((0, 3), (6, 3))
+BASE_UNIT = 'king'
+DEFAULT_UNIT = 'unit'
+BASE_UNITS = ((0, 3), (6, 3))
 
 X = None  # To define center of mask
 
@@ -14,8 +16,8 @@ UNITS = {
             [1, 1, 1]
         ],
         'support': [
-            [0, 0, 0],
-            [0, X, 0],
+            [0, 1, 0],
+            [1, X, 1],
             [0, 0, 0]
         ]
     },

@@ -1,3 +1,68 @@
-UnitWidget {
+QWidget {
+    font-family: 'Trebuchet MS', sans-serif;
+}
+
+MainFrame {
+    background: #333;
+}
+
+Label[style='title'] {
+    font-size: 30px;
+    font-weight: bold;
+    color: white;
+}
+
+Label[style='data'] {
+    font-size: 30px;
+    color: white;
+}
+
+Label[color='blue'] {
+    color: dodgerblue;
+}
+
+Label[color='red'] {
+    color: red;
+}
+
+Button {
+    font-size: 25px;
+    color: white;
+    border-radius: 2px;
+    padding: 5px;
+}
+
+Button[style='turn'] {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop: 0 rgba(255, 174, 25, 255), stop: 0.5 rgba(230, 149, 0, 255), stop: 1 rgba(180, 116, 0, 255));
+}
+
+Button[style='battle'] {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop: 0 rgba(255, 87, 25, 255), stop: 0.5 rgba(230, 61, 0, 255), stop: 1 rgba(180, 48, 0, 255));
+}
+
+UnitWidget[style='default'] {
     background: gray;
+}
+
+UnitWidget[style='hover'] {
+    background: #bbb;
+}
+
+InfoLabel {
+    font-size: 15px;
+    font-weight: bold;
+    background-color: rgba(0, 0, 0, 100);
+    border-radius: 5px;
+}
+
+InfoLabel[style='damage'] {
+    color: red;
+}
+
+InfoLabel[style='support'] {
+    color: lime;
+}
+
+InfoLabel[style='health'] {
+    color: white;
 }
